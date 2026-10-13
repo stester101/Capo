@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1020"><title>Capo — Easy guitar shapes</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1020;color:#f5f7ff}*{box-sizing:border-box}body{margin:0;padding:48px 18px}main{max-width:680px;margin:auto}h1{font-size:36px;letter-spacing:-1.5px;margin:0 0 8px}p{color:#a9b5cd;margin:0 0 30px}label{display:block;color:#a9b5cd;font-size:13px;margin-bottom:9px}textarea{width:100%;min-height:115px;border:1px solid #35425e;background:#19243a;color:white;border-radius:16px;padding:18px;font:22px/1.5 system-ui;resize:vertical;outline:none}textarea:focus{border-color:#7b9cff}.head{display:flex;align-items:center;justify-content:space-between;margin:26px 0 12px}.head h2{font-size:17px;margin:0}.muted{color:#9caac5;font-size:12px}.card{background:#172239;border:1px solid #34425f;border-radius:15px;padding:18px;margin-bottom:10px;display:flex;gap:16px;align-items:center}.fret{min-width:95px;font-weight:750;font-size:19px}.chords{flex:1;font-size:19px;line-height:1.6;overflow-wrap:anywhere}.copy{background:#273754;border:1px solid #425372;color:white;border-radius:10px;padding:9px 12px;cursor:pointer}.best{border-color:#8ca7f9}.tag{font-size:11px;color:#a9bfff;display:block;margin-top:4px}footer{color:#8592ab;font-size:12px;margin-top:25px}#error{color:#ffb7b7;font-size:13px;margin-top:8px}@media(max-width:460px){body{padding:26px 14px}h1{font-size:31px}.card{padding:13px;gap:8px}.fret{min-width:72px;font-size:16px}.chords{font-size:16px}.copy{padding:8px}}
+</style></head><body><main><h1>Capo</h1><p>Easy shapes. Same sound.</p><label for="input">Paste your chords</label><textarea id="input" spellcheck="false" placeholder="e.g. F#m D A E">F#m D A E</textarea><div id="error"></div><div class="head"><h2>Best capo options</h2><span class="muted">Original pitch</span></div><div id="results"></div><footer>Ranked for open chords, with B7 preferred over difficult barre shapes.</footer></main>
+<script>
+(function(){
+const names=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const alias={'Db':'C#','D#':'Eb','Gb':'F#','G#':'Ab','A#':'Bb','Cb':'B','B#':'C','E#':'F','Fb':'E'};
+const easy=new Set(['C','D','Dm','E','Em','G','A','Am','A7','D7','E7','G7','Cmaj7','Am7','Em7','Dsus4','Asus2','B7','Dmaj7','Amaj7','Cadd9','G6','Eadd9']);
+const medium=new Set(['Fmaj7','Bm7','F#m7','C#m7','G#m7','C7','Fadd9','B','Bm','F']);
+const input=document.getElementById('input'),out=document.getElementById('results'),err=document.getElementById('error');
+function shiftRoot(n,delta){let i=names.indexOf(alias[n]||n);return i<0?n:names[(i+delta%12+12)%12]}
+function shiftChord(ch,delta){return ch.replace(/^([A-G](?:#|b)?)([^/]*)(?:\/([A-G](?:#|b)?))?$/,(_,root,suffix,bass)=>shiftRoot(root,delta)+suffix+(bass?'/'+shiftRoot(bass,delta):''))}
+function score(c){if(easy.has(c))return 0;if(medium.has(c))return 2;return 5}
+function render(){
+const tokens=input.value.trim().split(/[\s,|]+/).filter(Boolean);
+const valid=tokens.filter(x=>/^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add|M)?[0-9#b+()a-zA-Z]*(?:\/[A-G](?:#|b)?)?$/.test(x));
+err.textContent=tokens.length!==valid.length?'Unrecognised: '+tokens.filter(x=>!valid.includes(x)).join(', '):'';
+out.replaceChildren();if(!valid.length)return;
+const opts=Array.from({length:12},(_,capo)=>{const chords=valid.map(x=>shiftChord(x,-capo));return {capo,chords,score:chords.reduce((n,c)=>n+score(c),0)+capo*.16}}).sort((a,b)=>a.score-b.score).slice(0,3);
+opts.forEach((o,i)=>{const card=document.createElement('div');card.className='card'+(i===0?' best':'');const fret=document.createElement('div');fret.className='fret';fret.textContent='Capo '+o.capo;if(i===0){const tag=document.createElement('span');tag.className='tag';tag.textContent='Best fit';fret.appendChild(tag)}const chords=document.createElement('div');chords.className='chords';chords.textContent=o.chords.join(' · ');const btn=document.createElement('button');btn.className='copy';btn.textContent='Copy';btn.addEventListener('click',async()=>{try{await navigator.clipboard.writeText('Capo '+o.capo+': '+o.chords.join(' '));btn.textContent='Copied'}catch(e){btn.textContent='Select text'}setTimeout(()=>btn.textContent='Copy',1500)});card.append(fret,chords,btn);out.appendChild(card)});
+}
+input.addEventListener('input',render);render();
+})();
+</script></body></html>
